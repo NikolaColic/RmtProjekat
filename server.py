@@ -66,6 +66,7 @@ class ClientHandler(Thread):
                         return x.username;
             return False;
         username = "";
+        result = None;
         while True:
             try:
                 # Receive message from this client
@@ -131,16 +132,7 @@ class ClientHandler(Thread):
 
                         osoba = Osoba(imeRegistracija,prezimeRegistracija,usernameRegistracija, emailRegistracija,sifraRegistracija);
 
-                        """
-                        if(proveraRegistracije(osoba)== 1):
-                            self.sock.send("Osoba sa datim emailom i korisnickim imenom postoji vec.Molim Vas unesite neku drugu vrednost".encode())
-                            continue;
-                        elif(proveraRegistracije(osoba)==2):
-                            self.sock.send("Osoba sa datim emailom postoji.Molim Vas unesite neku drugu vrednost".encode())
-                            continue;
-                        elif(proveraRegistracije(osoba)==3):
-                            self.sock.send("Osoba sa datim korisnickim imenom postoji.Molim Vas unesite neku drugu vrednost".encode())
-                            continue;"""
+
                         self.sock.send("Uspesno ste se registrovali".encode());
                         ubacivanjeRegistrovanog(osoba);
                         clients.append(osoba);
@@ -199,89 +191,118 @@ class ClientHandler(Thread):
                         self.sock.send("Niste se ulogovali i ne mozete da igrate igricu".encode());
                         time.sleep(2);
                         continue;
-                    self.sock.send("Trazimo vase protivnika molim vas sacekajte".encode());
-                    osoba = LoginOsoba("","","","");
-                    print(username);
-                    for x in loginClients:
-                        #if(x.client_adress == self.address and x.client_socket == self.sock):
+                    while(True):
+                        self.sock.send("\nDobrodosli u igricu.\n 1.Igrajte igricu \n 2.Vasa statistika \n "
+                                       "3.Rang Lista (brojPoena/brojMeceva) \n 4.Vratite se u glavni meni".encode());
+                        izborIgrica = self.sock.recv(4096).decode();
+                        if(izborIgrica=="1"):
+                            self.sock.send("Trazimo vase protivnika molim vas sacekajte".encode());
+                            osoba = LoginOsoba("","","","");
+                            print(username);
+                            for x in loginClients:
+                                #if(x.client_adress == self.address and x.client_socket == self.sock):
 
-                        if(x.username==username):
-                            #ovde je problem zato sto su i thread1 i thread2 na istom socketu i istoj adresi i on vec nadje taj isti
-                            cekajuClients.append(x);
-                            print(len(cekajuClients));
-                            osoba = x;
-                            break;
-
-
-
-                    print("Osoba je" + osoba.username) #ako se login preko mejla pokazuje mail
-                    napustanjeWhile=0;
-                    brojac=-1;
-
-                    prviIgrac = LoginOsoba("","","","");
-                    drugiIgrac = LoginOsoba("","","","");
-                    while True:
-
-                        i=0;
-
-
-
-                        if len(cekajuClients)==0:
-                            break;
-
-                        #ovde je bio brojac;
-                        while brojac < len(cekajuClients):
-                            # ovde puca kod kada se pokrene thread 2 pa thread 1- kaze out of range
-
-                            if (cekajuClients[i].username == osoba.username):
-                                brojac = i;  # poziciju u listi nalazi
-                                break;
-                            i += 1;
-                        if (brojac == -1):
-                            break;
-
-
-                        if(brojac%2==0):
-
-
-                            for x in cekajuClients:
-                                if (x.username != osoba.username):
-                                    # x.client_socket.send("Vas protivnik je  "+osoba.username.encode())
-
-
-                                    pro1 ="Vas protivnik je "+str(osoba.username);
-                                    x.client_socket.send(pro1.encode());
-                                    print("vas" + x.username);
-                                    print("vas" + osoba.username);
-                                    prviIgrac=osoba;
-                                    drugiIgrac=x;
-
-
-                                    pro2 ="Vas protivnik je"+str(x.username);
-                                    osoba.client_socket.send(pro2.encode())
-                                    cekajuClients.remove(x);
-                                    cekajuClients.remove(osoba);
-
-                                    napustanjeWhile = 1;
+                                if(x.username==username):
+                                    #ovde je problem zato sto su i thread1 i thread2 na istom socketu i istoj adresi i on vec nadje taj isti
+                                    cekajuClients.append(x);
+                                    print(len(cekajuClients));
+                                    osoba = x;
                                     break;
-                            if(napustanjeWhile==1):
-                                break;
+
+
+
+                            print("Osoba je" + osoba.username) #ako se login preko mejla pokazuje mail
+                            napustanjeWhile=0;
+                            brojac=-1;
+
+                            prviIgrac = LoginOsoba("","","","");
+                            drugiIgrac = LoginOsoba("","","","");
+                            while True:
+
+                                i=0;
+                                if len(cekajuClients)==0:
+                                    break;
+
+                                #ovde je bio brojac;
+                                while brojac < len(cekajuClients):
+                                    # ovde puca kod kada se pokrene thread 2 pa thread 1- kaze out of range
+
+                                    if (cekajuClients[i].username == osoba.username):
+                                        brojac = i;  # poziciju u listi nalazi
+                                        break;
+                                    i += 1;
+                                if (brojac == -1):
+                                    break;
+
+
+                                if(brojac%2==0):
+                                    for x in cekajuClients:
+                                        if (x.username != osoba.username):
+                                            # x.client_socket.send("Vas protivnik je  "+osoba.username.encode())
+                                            pro1 ="Vas protivnik je "+str(osoba.username);
+                                            x.client_socket.send(pro1.encode());
+                                            print("vas" + x.username);
+                                            print("vas" + osoba.username);
+                                            prviIgrac=osoba;
+                                            drugiIgrac=x;
+
+
+                                            pro2 ="Vas protivnik je "+str(x.username);
+                                            osoba.client_socket.send(pro2.encode())
+                                            cekajuClients.remove(x);
+                                            cekajuClients.remove(osoba);
+
+                                            napustanjeWhile = 1;
+                                            break;
+                                    if(napustanjeWhile==1):
+                                        break;
+                                else:
+                                    time.sleep(10) #ovo mozda ali i ne treba
+                            if(brojac%2==0):
+                                time.sleep(2);
+                                ubaciIgraca(prviIgrac.username);
+                                ubaciIgraca(drugiIgrac.username); #ubacivanje u bazu
+                                prviIgrac.client_socket.send("Dobrodosli u igricu".encode());
+                                drugiIgrac.client_socket.send("Dobrodosli u igricu".encode());
+                                time.sleep(3);
+                                #t1 = Thread(target=igrica,args=(matricaPocetna,prviIgrac,drugiIgrac));
+                                igrica(matricaPocetna,prviIgrac,drugiIgrac)
+                                result=42
+
+                            else:
+                                time.sleep(10*60)
+
+                        elif(izborIgrica=="2"):
+
+                            if(prikaziStatistikuIgraca(username)==False):
+                                self.sock.send("Niste jos uvek nijednom pokrenuli igricu".encode());
+                                time.sleep(1);
+                                continue;
+                            else:
+                                stat = prikaziStatistikuIgraca(username);
+
+                            statistika = "Vasa statistika je:\n Broj odigranih meceva: "+str(stat[0][1])+ "\n Broj pobeda: " +str(stat[0][3]) \
+                                         +"\n Ukupan broj poena: "+str(stat[0][2]);
+                            self.sock.send(statistika.encode());
+                            time.sleep(3);
+                        elif(izborIgrica=="4"):
+                            break;
+                            time.sleep(1);
+                        elif(izborIgrica=="3"):
+                           if (prikaziStatistikuIgraca(username) == False):
+                                self.sock.send("Niste jos uvek nijednom pokrenuli igricu".encode());
+                                time.sleep(1);
+                                continue;
+                           rangLista= prikaziRangListu(username);
+                           self.sock.send(rangLista.encode());
+                           time.sleep(3);
                         else:
-                            time.sleep(10) #ovo mozda ali i ne treba
-                    if(brojac%2==0):
-                        time.sleep(2);
-                        ubaciIgraca(prviIgrac.username);
-                        ubaciIgraca(drugiIgrac.username); #ubacivanje u bazu
-                        prviIgrac.client_socket.send("Dobrodosli u igricu".encode());
-                        drugiIgrac.client_socket.send("Dobrodosli u igricu".encode());
-                        time.sleep(3);
-                        igrica(matricaPocetna,prviIgrac,drugiIgrac)
-                    else:
-                        time.sleep(60*15) #ovde je problem
+                            self.sock.send("Pogresno ste uneli broj".encode());
 
-
-
-
+                elif(izborMenija=="5"):
+                    self.sock.send("Dovidjenja".encode());
+                else:
+                    self.sock.send("Pogresno ste uneli broj".encode());
             except ConnectionResetError:
                 # Making a sending format variable
 
@@ -304,6 +325,7 @@ class ClientHandler(Thread):
 clients =[];
 loginClients=[];
 cekajuClients =[];
+
 
 
 server_address = 'localhost';

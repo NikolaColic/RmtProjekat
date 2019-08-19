@@ -19,7 +19,12 @@ class ListenThread(Thread):
             try:
                 tekst= self.sock.recv(4096).decode();
                 tekstZaProveru = tekst;
+                if (tekst == "TimeOut"):
+                    cl_socket.send("TimeOut".encode());
+                    continue;
+
                 print(tekst);
+
                 if(tekst=="Dovidjenja"):
 
                     return;
@@ -45,6 +50,7 @@ while True:
     except:
         print("ne mozete da se povezete na server")
         sleep(5);
+
 
 while True:
     try:

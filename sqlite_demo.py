@@ -1,6 +1,7 @@
 import sqlite3;
 from osoba import *;
 import random;
+from colorclass import *;
 
 conn = sqlite3.connect("igraci.db",check_same_thread=False);
 
@@ -72,15 +73,58 @@ def ubaciIgraca(username):
 
     conn.commit();
 
+
 def azuriraj(username,brojPoena,pobeda):
     with conn:
-        c.execute("UPDATE igrac set brojMeceva +=:brojMeceva and ukupanBrojPoena +=:brojPoena and brojPobeda+=:pobeda where username =:username",
-                  {'brojMeceva': 1,'brojPoena':brojPoena,'pobeda':pobeda,'username':username});
+        c.execute("select brojMeceva from igrac where username=:username",{'username':username});
+        ranijeBrojMeceva = list(c.fetchone())[0];
+
+        c.execute("select ukupanBrojPoena from igrac where username=:username", {'username': username});
+        ranijeBrojPoena = list(c.fetchone())[0];
+
+        c.execute("select brojPobeda from igrac where username=:username", {'username': username});
+        ranijeBrojPobeda = list(c.fetchone())[0];
+        c.execute("DELETE FROM igrac where username=:username", {'username': username});
+
+        c.execute("INSERT into igrac VALUES (?,?,?,?)",
+                  (username, ranijeBrojMeceva+1, ranijeBrojPoena+brojPoena, ranijeBrojPobeda+pobeda));
+
     conn.commit();
+
+def prikaziRangListu(username):
+    c.execute("select * from igrac");
+    listaPrva = list(c.fetchall());
+
+    listaPrva.sort(key=lambda listaPrva: listaPrva[3],reverse=True);
+    brojac=1;
+
+    rangLista ="Username igraca\tBroj pobeda\n";
+    for x in listaPrva:
+        if(x[0]==username):
+
+            rangLista+=Color(u"{green}{b}" +"\n"+str(brojac)+".\t" +x[0]+"\t"+str(x[3]) + "{/b}{/green}");
+            brojac+=1;
+            continue;
+
+        rangLista+="\n"+str(brojac)+".\t"+x[0]+"\t"+str(x[3]);
+        brojac+=1;
+    return rangLista;
+
+
+#azuriraj("jovanpetrovic97",110,1);
 
 
 def prikaziStatistikuIgraca(username):
-    print(c.execute("select * from igrac where username=:username",{'username':username}));
+    c.execute("select * from igrac where username=:username",{'username':username});
+
+    lista = list(c.fetchall());
+    if(len(lista)==0):
+        return False;
+
+
+    return lista;
+
+kaoLista=prikaziStatistikuIgraca("jovanpetrovic97");
 
 #------------------------------------------------------------------------------------------------------------------------------
 
@@ -97,6 +141,8 @@ def prikaziStatistikuIgraca(username):
 #conn.commit();
 
 
+
+
 def dodajPitanje(redniBroj,pitanje,a,b,c,d,tacanOdgovor,kategorija):
     with conn:
         print("nik");
@@ -107,13 +153,18 @@ def randomPitanje(kategorija,listaTacnihOdgovora):
     #ovde moze da se salje i pitanja koji su prosli
     c.execute("select * from pitanja where kategorija =:kategorija",{'kategorija':kategorija});
     lista =list(c.fetchall());
-    for x in lista:
-        for y in listaTacnihOdgovora:
-            if(x[1]==y[1]):
-                lista.remove(x);
-                break;
+    novaLista=[]
 
-    return random.choice(lista);
+    for x in lista:
+        brojac = 0;
+        for y in listaTacnihOdgovora:
+            if((x[1])==y):
+                brojac+=1;
+        if(brojac==0):
+            novaLista.append(x);
+
+    return random.choice(novaLista);
+
 
 
 

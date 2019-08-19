@@ -8,18 +8,18 @@ from osoba import *
 from sqlite_demo import *;
 
 
-matricaPocetna =np.array([[Color(u"{bgwhite}{black}{b}"+str(100)+"{/b}{/black}{/bgwhite}"),20,10,10,30,Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}"),Color((u"{bgyellow}{black}{b}"+str(50)+"{/b}{/black}{/bgyellow}"))],
+
+matricaPocetna =np.array([[Color(u"{bgwhite}{black}{b}"+str(100)+"{/b}{/black}{/bgwhite}"),20,10,10,30,Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}"),50],
                    [10,30,20,20,20,Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}"),10],
                    [30,10,10,30,10,10,30],
                    [10,Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}"),20,20,20,30,10],
-                    [Color((u"{bgyellow}{black}{b}"+str(50)+"{/b}{/black}{/bgyellow}")),Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}"),30,10,10,20,Color(u"{bgwhite}{black}{b}"+str(100)+"{/b}{/black}{/bgwhite}")]]);
+                    [50,Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}"),30,10,10,20,Color(u"{bgwhite}{black}{b}"+str(100)+"{/b}{/black}{/bgwhite}")]]);
 
 #Pravi se funkcija koja ce omoguci kretanje kroz matricu sa svim mogucim ogranicenjima 1.Gde zelim da se pomerim 2.Trenutna pozicija
 #Mozda i matrica da se salje trenutna
 def slanjeSvimIgracima(igraci,poruka):
     for x in igraci:
         x["igrac"].client_socket.send(poruka.encode());
-
 def slanjePrvomIgracu(igraci,poruka):
     igraci[0]["igrac"].client_socket.send(poruka.encode());
 def slanjeDrugomIgracu(igraci,poruka):
@@ -30,7 +30,6 @@ def slanjeIgracuBezPoteza(igraci,nekiIgrac,poruka):
         igraci[1]["igrac"].client_socket.send(poruka.encode());
     else:
         igraci[0]["igrac"].client_socket.send(poruka.encode());
-
 
 
 def kretanjeMatrica(korak,trenutnaPozicija,mat,listaPosecenih):
@@ -77,7 +76,7 @@ def kretanjeMatrica(korak,trenutnaPozicija,mat,listaPosecenih):
     if(korak == "levo"):
         if (trenutnaPozicija["brojKolone"] == 0):
             return False;
-        if (mat[trenutnaPozicija["brojVrste"]][trenutnaPozicija["brojKolone"]] == Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}")):
+        if (mat[trenutnaPozicija["brojVrste"]][trenutnaPozicija["brojKolone"]-1] == Color(u"{bgblue}{black}{b}"+"   "+"{/b}{/black}{/bgblue}")):
             return False;
         if (trenutnaPozicija["brojIgraca"] == 1):
             for x in listaPosecenih[0]:
@@ -109,12 +108,17 @@ def kretanjeMatrica(korak,trenutnaPozicija,mat,listaPosecenih):
 
         return True;
 
-def porukaOdDrugog(igraci,nekiIgrac):
-    if (igraci[0]["brojIgraca"] == nekiIgrac["brojIgraca"]):
-        if(igraci[1]["igrac"].client_socket.recv(4096).decode()== False):
-            return False;
-        else:
-            return True;
+
+
+def istekloVreme():
+    pomocna["vrednost"]=True;
+
+
+
+pomocna = {
+        "vrednost": False
+    }
+
 
 def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,skor,igraci,listaTacnihOdgovora):
     korak = {
@@ -123,23 +127,49 @@ def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,sk
         3: "desno",
         4: "dole"
     }
+    def novaTimer():
+        try:
+            pocetnaPozicijaPrvog["igrac"].client_socket.send("TimeOut".encode());
+        except:
+            print("pukao")
+
     listaOdgovora = ['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D']
+
     odgovor ="";
+
+    pomocna["vrednost"]=False;
+    timer = Timer(15.0,istekloVreme);
+
+    timer.start();
     while (True):
 
-        odgovor = pocetnaPozicijaPrvog["igrac"].client_socket.recv(4096).decode();
+        if(pomocna["vrednost"]==True):
+            pocetnaPozicijaPrvog["igrac"].client_socket.send("Niste na vreme odgovorili".encode());
+            slanjeIgracuBezPoteza(igraci,pocetnaPozicijaPrvog,"Protivnik nije na vreme odgovorio");
+            time.sleep(2);
+            return matrica;
+        noviTimer = Timer(2.0,novaTimer);
+        noviTimer.start();
+        odgovor = pocetnaPozicijaPrvog["igrac"].client_socket.recv(4096).decode(); #ovako mora da ne bi zabolo zbog timera
+
+        if(odgovor=="TimeOut"):
+
+            continue;
+        noviTimer.cancel();
+
         izlazFor = 0;
         for x in listaOdgovora:
             if (odgovor == x):
                 izlazFor = 1;
                 break;
         if (izlazFor == 1):
+            timer.cancel();
             break;
         pocetnaPozicijaPrvog["igrac"].client_socket.send("Pogresno ste uneli odgovor.Pokusajte ponovo".encode());
         time.sleep(0.5)
     if (odgovor.upper() == pitanje[6]):
         while (True):
-            listaTacnihOdgovora.append(pitanje);
+            listaTacnihOdgovora.append(pitanje[1]);
             pocetnaPozicijaPrvog["igrac"].client_socket.send("Odgovor je tacan".encode());
             time.sleep(1);
             slanjeIgracuBezPoteza(igraci,pocetnaPozicijaPrvog,"Protivnik je tacno odgovorio. Njegov odgovor je "+odgovor+ "Uskoro ste Vi na potezu");
@@ -154,6 +184,7 @@ def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,sk
                     + "{/b}{/black}{/bgred}");
                 posecenPrvi = {"brojVrste": pocetnaPozicijaPrvog["brojVrste"], "brojKolone": pocetnaPozicijaPrvog["brojKolone"]};
                 listaPosecenih[0].append(posecenPrvi);
+
                 skor["prviIgracSkor"] += skor["vrednostPitanja"];
 
             else:
@@ -166,36 +197,44 @@ def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,sk
                 skor["drugiIgracSkor"] += skor["vrednostPitanja"];
 
             slanjeSvimIgracima(igraci,"Trenutni rezultat je:\n Prvi igrac: "+str(skor["prviIgracSkor"])+"\n Drugi igrac: "+str(skor["drugiIgracSkor"])+"\n");
-            time.sleep(2);
+            time.sleep(1);
+
+
             listaPomeraja = [1, 2, 3, 4];
-            pocetnaPozicijaPrvog["igrac"].client_socket.send("Gde zelite da se pomerite? Unesite broj od jedan do cetiri.\n 1.Napred \n 2.Levo \n 3.Desno \n 4.Dole ".encode());
-            pomeraj = pocetnaPozicijaPrvog["igrac"].client_socket.recv(4096).decode();
-            izlazWhile = 0;
-            for x in listaPomeraja:
-                if (pomeraj == str(x)):
-                    izlazWhile = 1;
-                    break;
-            if (izlazWhile == 0):
-                pocetnaPozicijaPrvog["igrac"].client_socket.send("Pogresno ste uneli broj na koji zelite da se pomerite".encode())
-                time.sleep(0.5)
-                continue;
-            nova = pocetnaPozicijaPrvog;
+
+            while(True):
+
+                izlazwhile = 0;
+                while(True):
+                    pocetnaPozicijaPrvog["igrac"].client_socket.send("Gde zelite da se pomerite? Unesite broj od jedan do cetiri.\n 1.Napred \n 2.Levo \n 3.Desno \n 4.Dole ".encode());
+                    pomeraj = pocetnaPozicijaPrvog["igrac"].client_socket.recv(4096).decode();
+
+                    for x in listaPomeraja:
+                        if (pomeraj == str(x)):
+                           izlazwhile = 1;
+                           break;
+
+                    if(izlazwhile == 1):
+                        break;
+
+                    pocetnaPozicijaPrvog["igrac"].client_socket.send("Pogresno ste uneli broj na koji zelite da se pomerite".encode())
+                    time.sleep(0.5);
+
+                nova = pocetnaPozicijaPrvog;
+                bool = kretanjeMatrica(korak[int(pomeraj)], nova, matrica,listaPosecenih);
 
 
-            bool = kretanjeMatrica(korak[int(pomeraj)], nova, matrica,listaPosecenih);
+                if(bool==False):
+                    pocetnaPozicijaPrvog["igrac"].client_socket.send("Nije moguce se pomeriti ovde".encode());
+                    time.sleep(0.5)
+                    continue; #bool uvek ostaje false zato sto prenos po vrednosti
 
-            matrica[pocetnaPozicijaPrvog["brojVrste"]][pocetnaPozicijaPrvog["brojKolone"]] = Color(
-                u"{bgwhite}{black}{b}" + pocetnaPozicijaPrvog["vrednostMatrice"]
-                + "{/b}{/black}{/bgwhite}");
-            if(bool==False):
-                pocetnaPozicijaPrvog["igrac"].client_socket.send("Nije moguce se pomeriti ovde".encode());
-                time.sleep(0.5)
-                continue; #bool uvek ostaje false zato sto prenos po vrednosti
-            #OVO JE ako protivnik koji nije na potezu posalje nesto da ga anullira samo
-           # if(porukaOdDrugog(igraci,pocetnaPozicijaPrvog)==False): #ovde koci program
-             #   slanjeIgracuBezPoteza(igraci,pocetnaPozicijaPrvog,"Jos uvek niste vi na potezu");
+                matrica[pocetnaPozicijaPrvog["brojVrste"]][pocetnaPozicijaPrvog["brojKolone"]] = Color(
+                    u"{bgwhite}{black}{b}" + pocetnaPozicijaPrvog["vrednostMatrice"]
+                    + "{/b}{/black}{/bgwhite}");
+                break;
             return matrica;
-            break;
+
     else:
 
         pocetnaPozicijaPrvog["igrac"].client_socket.send("Odgovor nije tacan\n".encode());
@@ -227,6 +266,7 @@ def tipPitanja(pozicija):
             return 50;
 
 
+
 def igrica(matrica,prviIgrac,drugiIgrac): #mora metoda da se pozove koja postavlja pitanje i proverava odgovore i prenos(preko one kategorije i vrednosti
     timeout = 60 * 15  # [seconds]
     timeout_start = time.time()
@@ -240,29 +280,59 @@ def igrica(matrica,prviIgrac,drugiIgrac): #mora metoda da se pozove koja postavl
                             "vrednostMatrice": matrica[4][6],
                             "brojIgraca": 2,
                             "igrac": drugiIgrac}
+
     listaPosecenihPrvi =[{"brojVrste": pocetnaPozicijaPrvog["brojVrste"],"brojKolone": pocetnaPozicijaPrvog["brojKolone"]}];
     listaPosecenihDrugi=[{"brojVrste": pocetnaPozicijaDrugog["brojVrste"],"brojKolone": pocetnaPozicijaDrugog["brojKolone"]}];
     listaPosecenih =[listaPosecenihPrvi,listaPosecenihDrugi]
+
     listaTacnihOdgovora=[];
     igrac = [pocetnaPozicijaPrvog,pocetnaPozicijaDrugog];
     i=0;
+    def slanjePrvom(): #ovo su funcije da rese problem ako tokom igre jednog igraca drugi posalje poruku i obrunuto
+        try:
+            igrac[0]["igrac"].client_socket.send("TimeOut".encode());
+        except:
+            print("otisao igrac")
+    def slanjeDrugom():
+        try:
+            igrac[1]["igrac"].client_socket.send("TimeOut".encode());
+        except:
+            print("otisao igrac")
+
     skor = {"prviIgracSkor": 0,
             "drugiIgracSkor": 0}
+
     while time.time() < timeout_start+timeout: #Ovo je vreme igrice 15 min
+
         slanjeSvimIgracima(igrac,tabulate(matrica, tablefmt="fancy_grid"));
-        time.sleep(2);
+        time.sleep(1);
         if(i==0):
             slanjeSvimIgracima(igrac,"Na potezu je: "+igrac[0]["igrac"].username);
+
+            noviTimer = Timer(1.0, slanjePrvom);
+            noviTimer.start();
+            odg1 = igrac[0]["igrac"].client_socket.recv(4096).decode()
+            if(odg1 == "TimeOut"):
+                print("okej")
+            noviTimer.cancel()
+
         else:
             slanjeSvimIgracima(igrac,"Na potezu je: "+igrac[1]["igrac"].username);
+            noviTimer = Timer(1.0, slanjeDrugom);
+            noviTimer.start();
+            odg2=igrac[1]["igrac"].client_socket.recv(4096).decode()
+            noviTimer.cancel();
         vremeOdgovora=15;
         vremeStart= time.time();
 
         while time.time() < vremeStart+vremeOdgovora: #Ovo je vreme za svako pitanje i pomeraj
-            igrac[0]["igrac"].client_socket.clear();
+
+
             pitanje ="";
             if(tipPitanja(igrac[i])==10):
+
                 randomPitanjePostavlenoDeset = randomPitanje(10,listaTacnihOdgovora);
+
                 porukaDeset = str(randomPitanjePostavlenoDeset[1])+"\n A)"+str(randomPitanjePostavlenoDeset[2])+"\n B)"+str(randomPitanjePostavlenoDeset[3]) +"\n C)"+str(randomPitanjePostavlenoDeset[4])+"\n D)"+str(randomPitanjePostavlenoDeset[5])+"\n Molim Vas odgovorite na pitanje";
 
                 igrac[i]["igrac"].client_socket.send(porukaDeset.encode());
@@ -322,17 +392,20 @@ def igrica(matrica,prviIgrac,drugiIgrac): #mora metoda da se pozove koja postavl
         igrac[1]["igrac"].client_socket.send("Nazalost izgubili ste. Vise sredje sledeci put!".encode());
         azuriraj(igrac[0]["igrac"].username,skor["prviIgracSkor"],1)
         azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 0)
+
         time.sleep(5);
     elif(skor["prviIgracSkor"]<skor["drugiIgracSkor"]):
         igrac[1]["igrac"].client_socket.send("Cestitamo! Vi ste pobedili".encode());
         igrac[0]["igrac"].client_socket.send("Nazalost izgubili ste. Vise sredje sledeci put!".encode());
         azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 1)
         azuriraj(igrac[0]["igrac"].username, skor["prviIgracSkor"], 0)
+
     else:
         slanjeSvimIgracima(igrac,"Nereseno je!")
         time.sleep(5);
         azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 0)
         azuriraj(igrac[0]["igrac"].username, skor["prviIgracSkor"], 0)
+
 
 
 
