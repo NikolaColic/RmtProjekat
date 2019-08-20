@@ -52,6 +52,8 @@ class ClientHandler(Thread):
 
             return 0;
 
+
+
         def proveraLogin(usernameEmail,sifra,broj):
             usernameEmail = str(usernameEmail);
             sifra = str(sifra);
@@ -66,7 +68,7 @@ class ClientHandler(Thread):
                         return x.username;
             return False;
         username = "";
-        result = None;
+
         while True:
             try:
                 # Receive message from this client
@@ -266,11 +268,26 @@ class ClientHandler(Thread):
                                 drugiIgrac.client_socket.send("Dobrodosli u igricu".encode());
                                 time.sleep(3);
                                 #t1 = Thread(target=igrica,args=(matricaPocetna,prviIgrac,drugiIgrac));
-                                igrica(matricaPocetna,prviIgrac,drugiIgrac)
-                                result=42
+
+
+
+
+                                listaMeceva.append(prviIgrac);
+                                listaMeceva.append(drugiIgrac);
+                                igrica(matricaPocetna,prviIgrac,drugiIgrac);
+                                listaMeceva.remove(prviIgrac);
+                                listaMeceva.remove(drugiIgrac);
 
                             else:
-                                time.sleep(10*60)
+                                while brojac==1:
+                                   brojac=0;
+                                   for x in listaMeceva:
+                                        if(x.client_socket == self.sock and x.client_adress == self.address):
+                                            brojac=1;
+                                            break;
+
+                                   time.sleep(5);
+
 
                         elif(izborIgrica=="2"):
 
@@ -307,9 +324,16 @@ class ClientHandler(Thread):
                 # Making a sending format variable
 
 
-                # Thread removes itself from clients list
+
                 #clients.remove(self)
                 # Send every client that this client disconnected
+                # for x in listaMeceva:
+                #     if(x["prvi"].client_socket == self.sock and x["prvi"].client_adress == self.address):
+                #         x["drugi"].client_socket.send("Vas protivnik je napustio igru".encode())
+                #     if (x["drugi"].client_socket == self.sock and x["drugi"].client_adress == self.address):
+                #         x["prvi"].client_socket.send("Vas protivnik je napustio igru".encode())
+                #     listaMeceva.remove(x);
+
                 for x in loginClients:
                     if(x.client_socket ==self.sock and x.client_adress == self.address):
                         loginClients.remove(x);
@@ -325,8 +349,7 @@ class ClientHandler(Thread):
 clients =[];
 loginClients=[];
 cekajuClients =[];
-
-
+listaMeceva =[];
 
 server_address = 'localhost';
 server_port =8090;

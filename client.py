@@ -28,7 +28,7 @@ class ListenThread(Thread):
                 if(tekst=="Dovidjenja"):
 
                     return;
-            except:
+            except ConnectionResetError:
                 print("ne mozete da se povezete na server")
                 sleep(5);
 

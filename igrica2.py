@@ -119,6 +119,18 @@ pomocna = {
         "vrednost": False
     }
 
+def funkcijaObradaException(exc,igraci,bool):
+    if (exc == igraci[0]["igrac"].client_socket):
+        igraci[0]["igrac"].client_socket.send("Cestitamo. Vi ste pobedili".encode());
+        azuriraj(igraci[0]["igrac"].username, skor["drugiIgracSkor"], 1)
+        bool =True;
+        return;
+
+    else:
+        igraci[1]["igrac"].client_socket.send("Cestitamo. Vi ste pobedili".encode());
+        azuriraj(igraci[1]["igrac"].username, skor["drugiIgracSkor"], 1)
+        bool =True;
+        return;
 
 def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,skor,igraci,listaTacnihOdgovora):
     korak = {
@@ -127,11 +139,14 @@ def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,sk
         3: "desno",
         4: "dole"
     }
+    bool = False;
     def novaTimer():
         try:
             pocetnaPozicijaPrvog["igrac"].client_socket.send("TimeOut".encode());
-        except:
-            print("pukao")
+
+        except Exception as exc:
+            # funkcijaObradaException(exc,igraci,bool);
+            print("nije okej")
 
     listaOdgovora = ['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D']
 
@@ -150,7 +165,11 @@ def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,sk
             return matrica;
         noviTimer = Timer(2.0,novaTimer);
         noviTimer.start();
+
         odgovor = pocetnaPozicijaPrvog["igrac"].client_socket.recv(4096).decode(); #ovako mora da ne bi zabolo zbog timera
+
+        if (bool == True):
+            return;
 
         if(odgovor=="TimeOut"):
 
@@ -170,7 +189,12 @@ def odgovorObrada(odgovor,matrica,pocetnaPozicijaPrvog,pitanje,listaPosecenih,sk
     if (odgovor.upper() == pitanje[6]):
         while (True):
             listaTacnihOdgovora.append(pitanje[1]);
+
             pocetnaPozicijaPrvog["igrac"].client_socket.send("Odgovor je tacan".encode());
+
+            if(bool==True):
+                return;
+
             time.sleep(1);
             slanjeIgracuBezPoteza(igraci,pocetnaPozicijaPrvog,"Protivnik je tacno odgovorio. Njegov odgovor je "+odgovor+ "Uskoro ste Vi na potezu");
             if(pocetnaPozicijaPrvog["vrednostMatrice"] == Color(u"{bgred}{black}{b}" + str(skor["vrednostPitanja"])+ "{/b}{/black}{/bgred}")
@@ -268,143 +292,148 @@ def tipPitanja(pozicija):
 
 
 def igrica(matrica,prviIgrac,drugiIgrac): #mora metoda da se pozove koja postavlja pitanje i proverava odgovore i prenos(preko one kategorije i vrednosti
-    timeout = 60 * 15  # [seconds]
-    timeout_start = time.time()
-    pocetnaPozicijaPrvog = {"brojVrste": 0,
-                            "brojKolone": 0,
-                            "vrednostMatrice": matrica[0][0],
-                            "brojIgraca": 1,
-                            "igrac": prviIgrac}
-    pocetnaPozicijaDrugog = {"brojVrste": 4,
-                            "brojKolone": 6,
-                            "vrednostMatrice": matrica[4][6],
-                            "brojIgraca": 2,
-                            "igrac": drugiIgrac}
 
-    listaPosecenihPrvi =[{"brojVrste": pocetnaPozicijaPrvog["brojVrste"],"brojKolone": pocetnaPozicijaPrvog["brojKolone"]}];
-    listaPosecenihDrugi=[{"brojVrste": pocetnaPozicijaDrugog["brojVrste"],"brojKolone": pocetnaPozicijaDrugog["brojKolone"]}];
-    listaPosecenih =[listaPosecenihPrvi,listaPosecenihDrugi]
+        timeout = 60 * 15  # [seconds]
+        timeout_start = time.time()
+        pocetnaPozicijaPrvog = {"brojVrste": 0,
+                                "brojKolone": 0,
+                                "vrednostMatrice": matrica[0][0],
+                                "brojIgraca": 1,
+                                "igrac": prviIgrac}
+        pocetnaPozicijaDrugog = {"brojVrste": 4,
+                                "brojKolone": 6,
+                                "vrednostMatrice": matrica[4][6],
+                                "brojIgraca": 2,
+                                "igrac": drugiIgrac}
 
-    listaTacnihOdgovora=[];
-    igrac = [pocetnaPozicijaPrvog,pocetnaPozicijaDrugog];
-    i=0;
-    def slanjePrvom(): #ovo su funcije da rese problem ako tokom igre jednog igraca drugi posalje poruku i obrunuto
-        try:
-            igrac[0]["igrac"].client_socket.send("TimeOut".encode());
-        except:
-            print("otisao igrac")
-    def slanjeDrugom():
-        try:
-            igrac[1]["igrac"].client_socket.send("TimeOut".encode());
-        except:
-            print("otisao igrac")
+        listaPosecenihPrvi =[{"brojVrste": pocetnaPozicijaPrvog["brojVrste"],"brojKolone": pocetnaPozicijaPrvog["brojKolone"]}];
+        listaPosecenihDrugi=[{"brojVrste": pocetnaPozicijaDrugog["brojVrste"],"brojKolone": pocetnaPozicijaDrugog["brojKolone"]}];
+        listaPosecenih =[listaPosecenihPrvi,listaPosecenihDrugi]
 
-    skor = {"prviIgracSkor": 0,
-            "drugiIgracSkor": 0}
+        listaTacnihOdgovora=[];
+        igrac = [pocetnaPozicijaPrvog,pocetnaPozicijaDrugog];
+        i=0;
+        def slanjePrvom(): #ovo su funcije da rese problem ako tokom igre jednog igraca drugi posalje poruku i obrunuto
+            try:
+                igrac[0]["igrac"].client_socket.send("TimeOut".encode());
+            except:
+                print("otisao igrac")
+        def slanjeDrugom():
+            try:
+                igrac[1]["igrac"].client_socket.send("TimeOut".encode());
+            except:
+                print("otisao igrac")
 
-    while time.time() < timeout_start+timeout: #Ovo je vreme igrice 15 min
+        skor = {"prviIgracSkor": 0,
+                "drugiIgracSkor": 0}
 
-        slanjeSvimIgracima(igrac,tabulate(matrica, tablefmt="fancy_grid"));
-        time.sleep(1);
-        if(i==0):
-            slanjeSvimIgracima(igrac,"Na potezu je: "+igrac[0]["igrac"].username);
+        while time.time() < timeout_start+timeout: #Ovo je vreme igrice 15 min
 
-            noviTimer = Timer(1.0, slanjePrvom);
-            noviTimer.start();
-            odg1 = igrac[0]["igrac"].client_socket.recv(4096).decode()
-            if(odg1 == "TimeOut"):
-                print("okej")
-            noviTimer.cancel()
+            slanjeSvimIgracima(igrac,tabulate(matrica, tablefmt="fancy_grid"));
+            time.sleep(1);
+            if(i==0):
+                slanjeSvimIgracima(igrac,"Na potezu je: "+igrac[0]["igrac"].username);
+
+                noviTimer = Timer(1.0, slanjePrvom);
+                noviTimer.start();
+                odg1 = igrac[0]["igrac"].client_socket.recv(4096).decode()
+                if(odg1 == "TimeOut"):
+                    print("okej")
+                noviTimer.cancel()
+
+            else:
+                slanjeSvimIgracima(igrac,"Na potezu je: "+igrac[1]["igrac"].username);
+                noviTimer = Timer(1.0, slanjeDrugom);
+                noviTimer.start();
+                odg2=igrac[1]["igrac"].client_socket.recv(4096).decode()
+                noviTimer.cancel();
+            vremeOdgovora=15;
+            vremeStart= time.time();
+
+            while time.time() < vremeStart+vremeOdgovora: #Ovo je vreme za svako pitanje i pomeraj
+
+
+                pitanje ="";
+                if(tipPitanja(igrac[i])==10):
+
+                    randomPitanjePostavlenoDeset = randomPitanje(10,listaTacnihOdgovora);
+
+                    porukaDeset = str(randomPitanjePostavlenoDeset[1])+"\n A)"+str(randomPitanjePostavlenoDeset[2])+"\n B)"+str(randomPitanjePostavlenoDeset[3]) +"\n C)"+str(randomPitanjePostavlenoDeset[4])+"\n D)"+str(randomPitanjePostavlenoDeset[5])+"\n Molim Vas odgovorite na pitanje";
+
+                    igrac[i]["igrac"].client_socket.send(porukaDeset.encode());
+                    slanjeIgracuBezPoteza(igrac, igrac[i],
+                        str(randomPitanjePostavlenoDeset[1])+"\n A)"+str(randomPitanjePostavlenoDeset[2])+"\n B)"+str(randomPitanjePostavlenoDeset[3]) +"\n C)"+str(randomPitanjePostavlenoDeset[4])+"\n D)"+str(randomPitanjePostavlenoDeset[5])+"\n Sacekajte da Vas protivnik odgovori na pitanje");
+                    pitanje = randomPitanjePostavlenoDeset;
+                elif(tipPitanja(igrac[i])==30):
+                    randomPitanjePostavlenoDvadeset =randomPitanje(30,listaTacnihOdgovora);
+                    poruka30= str(randomPitanjePostavlenoDvadeset[1])+"\n A)"+str(randomPitanjePostavlenoDvadeset[2])+"\n B)"\
+                              +str(randomPitanjePostavlenoDvadeset[3]) +"\n C)"+str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Molim Vas odgovorite sa A,B,C,D";
+                    igrac[i]["igrac"].client_socket.send(poruka30.encode());
+                    slanjeIgracuBezPoteza(igrac, igrac[i], str(randomPitanjePostavlenoDvadeset[1])+"\n A)"+str(randomPitanjePostavlenoDvadeset[2])+"\n B)"\
+                              +str(randomPitanjePostavlenoDvadeset[3]) +"\n C)"+str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Sacekajte da Vas protivnik odgovori na pitanje");
+
+                    pitanje = randomPitanjePostavlenoDvadeset;
+
+                elif (tipPitanja(igrac[i]) == 20):
+                    randomPitanjePostavlenoTrideset = randomPitanje(20,listaTacnihOdgovora);
+                    poruka20 = str(randomPitanjePostavlenoTrideset[1]) + "\n A)" + str(
+                        randomPitanjePostavlenoTrideset[2]) + "\n B)" \
+                               + str(randomPitanjePostavlenoTrideset[3]) + "\n C)" +str(randomPitanjePostavlenoTrideset[4])+"\n D)"+str(randomPitanjePostavlenoTrideset[5])+ "\n Molim Vas odgovorite sa A,B,C,D";
+                    igrac[i]["igrac"].client_socket.send(poruka20.encode());
+                    slanjeIgracuBezPoteza(igrac, igrac[i], str(randomPitanjePostavlenoTrideset[1]) + "\n A)" + str(
+                        randomPitanjePostavlenoTrideset[2]) + "\n B)" \
+                                          + str(randomPitanjePostavlenoTrideset[3]) + "\n C)" + str(randomPitanjePostavlenoTrideset[4])+"\n D)"+str(randomPitanjePostavlenoTrideset[5]) + "\n Sacekajte da Vas protivnik odgovori na pitanje");
+
+                    pitanje = randomPitanjePostavlenoTrideset;
+                elif (tipPitanja(igrac[i]) == 50):
+                    randomPitanjePostavlenoDvadeset = randomPitanje(30,listaTacnihOdgovora);
+                    poruka30 = str(randomPitanjePostavlenoDvadeset[1]) + "\n A)" + str(
+                        randomPitanjePostavlenoDvadeset[2]) + "\n B)" \
+                               + str(randomPitanjePostavlenoDvadeset[3]) + "\n C)" + \
+                               str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Molim Vas odgovorite sa A,B,C,D";
+                    igrac[i]["igrac"].client_socket.send(poruka30.encode());
+                    slanjeIgracuBezPoteza(igrac, igrac[i], str(randomPitanjePostavlenoDvadeset[1]) + "\n A)" + str(
+                        randomPitanjePostavlenoDvadeset[2]) + "\n B)" \
+                            + str(randomPitanjePostavlenoDvadeset[3]) + "\n C)" +str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Sacekajte da Vas protivnik odgovori na pitanje");
+
+                    pitanje = randomPitanjePostavlenoDvadeset;
+
+                skor["vrednostPitanja"] = int(tipPitanja(igrac[i]));
+                odgovor ="";
+                matrica =odgovorObrada(odgovor,matrica,igrac[i],pitanje,listaPosecenih,skor,igrac,listaTacnihOdgovora);
+                if(i==0):
+                    i+=1;
+                elif(i==1):
+                    i-=1;
+
+
+                break;
+            if(igrac[0]["brojVrste"]== 4 and igrac[0]["brojKolone"] ==6):
+                break;
+            if(igrac[1]["brojVrste"]== 0 and igrac[1]["brojKolone"] ==0):
+                break;
+
+        if(skor["prviIgracSkor"]>skor["drugiIgracSkor"]):
+            igrac[0]["igrac"].client_socket.send("Cestitamo! Vi ste pobedili".encode());
+            igrac[1]["igrac"].client_socket.send("Nazalost izgubili ste. Vise sredje sledeci put!".encode());
+            azuriraj(igrac[0]["igrac"].username,skor["prviIgracSkor"],1)
+            azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 0)
+
+
+
+            time.sleep(5);
+        elif(skor["prviIgracSkor"]<skor["drugiIgracSkor"]):
+            igrac[1]["igrac"].client_socket.send("Cestitamo! Vi ste pobedili".encode());
+            igrac[0]["igrac"].client_socket.send("Nazalost izgubili ste. Vise sredje sledeci put!".encode());
+            azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 1)
+            azuriraj(igrac[0]["igrac"].username, skor["prviIgracSkor"], 0)
+
 
         else:
-            slanjeSvimIgracima(igrac,"Na potezu je: "+igrac[1]["igrac"].username);
-            noviTimer = Timer(1.0, slanjeDrugom);
-            noviTimer.start();
-            odg2=igrac[1]["igrac"].client_socket.recv(4096).decode()
-            noviTimer.cancel();
-        vremeOdgovora=15;
-        vremeStart= time.time();
-
-        while time.time() < vremeStart+vremeOdgovora: #Ovo je vreme za svako pitanje i pomeraj
-
-
-            pitanje ="";
-            if(tipPitanja(igrac[i])==10):
-
-                randomPitanjePostavlenoDeset = randomPitanje(10,listaTacnihOdgovora);
-
-                porukaDeset = str(randomPitanjePostavlenoDeset[1])+"\n A)"+str(randomPitanjePostavlenoDeset[2])+"\n B)"+str(randomPitanjePostavlenoDeset[3]) +"\n C)"+str(randomPitanjePostavlenoDeset[4])+"\n D)"+str(randomPitanjePostavlenoDeset[5])+"\n Molim Vas odgovorite na pitanje";
-
-                igrac[i]["igrac"].client_socket.send(porukaDeset.encode());
-                slanjeIgracuBezPoteza(igrac, igrac[i],
-                    str(randomPitanjePostavlenoDeset[1])+"\n A)"+str(randomPitanjePostavlenoDeset[2])+"\n B)"+str(randomPitanjePostavlenoDeset[3]) +"\n C)"+str(randomPitanjePostavlenoDeset[4])+"\n D)"+str(randomPitanjePostavlenoDeset[5])+"\n Sacekajte da Vas protivnik odgovori na pitanje");
-                pitanje = randomPitanjePostavlenoDeset;
-            elif(tipPitanja(igrac[i])==30):
-                randomPitanjePostavlenoDvadeset =randomPitanje(30,listaTacnihOdgovora);
-                poruka30= str(randomPitanjePostavlenoDvadeset[1])+"\n A)"+str(randomPitanjePostavlenoDvadeset[2])+"\n B)"\
-                          +str(randomPitanjePostavlenoDvadeset[3]) +"\n C)"+str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Molim Vas odgovorite sa A,B,C,D";
-                igrac[i]["igrac"].client_socket.send(poruka30.encode());
-                slanjeIgracuBezPoteza(igrac, igrac[i], str(randomPitanjePostavlenoDvadeset[1])+"\n A)"+str(randomPitanjePostavlenoDvadeset[2])+"\n B)"\
-                          +str(randomPitanjePostavlenoDvadeset[3]) +"\n C)"+str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Sacekajte da Vas protivnik odgovori na pitanje");
-
-                pitanje = randomPitanjePostavlenoDvadeset;
-
-            elif (tipPitanja(igrac[i]) == 20):
-                randomPitanjePostavlenoTrideset = randomPitanje(20,listaTacnihOdgovora);
-                poruka20 = str(randomPitanjePostavlenoTrideset[1]) + "\n A)" + str(
-                    randomPitanjePostavlenoTrideset[2]) + "\n B)" \
-                           + str(randomPitanjePostavlenoTrideset[3]) + "\n C)" +str(randomPitanjePostavlenoTrideset[4])+"\n D)"+str(randomPitanjePostavlenoTrideset[5])+ "\n Molim Vas odgovorite sa A,B,C,D";
-                igrac[i]["igrac"].client_socket.send(poruka20.encode());
-                slanjeIgracuBezPoteza(igrac, igrac[i], str(randomPitanjePostavlenoTrideset[1]) + "\n A)" + str(
-                    randomPitanjePostavlenoTrideset[2]) + "\n B)" \
-                                      + str(randomPitanjePostavlenoTrideset[3]) + "\n C)" + str(randomPitanjePostavlenoTrideset[4])+"\n D)"+str(randomPitanjePostavlenoTrideset[5]) + "\n Sacekajte da Vas protivnik odgovori na pitanje");
-
-                pitanje = randomPitanjePostavlenoTrideset;
-            elif (tipPitanja(igrac[i]) == 50):
-                randomPitanjePostavlenoDvadeset = randomPitanje(30,listaTacnihOdgovora);
-                poruka30 = str(randomPitanjePostavlenoDvadeset[1]) + "\n A)" + str(
-                    randomPitanjePostavlenoDvadeset[2]) + "\n B)" \
-                           + str(randomPitanjePostavlenoDvadeset[3]) + "\n C)" + \
-                           str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Molim Vas odgovorite sa A,B,C,D";
-                igrac[i]["igrac"].client_socket.send(poruka30.encode());
-                slanjeIgracuBezPoteza(igrac, igrac[i], str(randomPitanjePostavlenoDvadeset[1]) + "\n A)" + str(
-                    randomPitanjePostavlenoDvadeset[2]) + "\n B)" \
-                        + str(randomPitanjePostavlenoDvadeset[3]) + "\n C)" +str(randomPitanjePostavlenoDvadeset[4])+"\n D)"+str(randomPitanjePostavlenoDvadeset[5])+ "\n Sacekajte da Vas protivnik odgovori na pitanje");
-
-                pitanje = randomPitanjePostavlenoDvadeset;
-
-            skor["vrednostPitanja"] = int(tipPitanja(igrac[i]));
-            odgovor ="";
-            matrica =odgovorObrada(odgovor,matrica,igrac[i],pitanje,listaPosecenih,skor,igrac,listaTacnihOdgovora);
-            if(i==0):
-                i+=1;
-            elif(i==1):
-                i-=1;
-
-
-            break;
-        if(igrac[0]["brojVrste"]== 4 and igrac[0]["brojKolone"] ==6):
-            break;
-        if(igrac[1]["brojVrste"]== 0 and igrac[1]["brojKolone"] ==0):
-            break;
-    if(skor["prviIgracSkor"]>skor["drugiIgracSkor"]):
-        igrac[0]["igrac"].client_socket.send("Cestitamo! Vi ste pobedili".encode());
-        igrac[1]["igrac"].client_socket.send("Nazalost izgubili ste. Vise sredje sledeci put!".encode());
-        azuriraj(igrac[0]["igrac"].username,skor["prviIgracSkor"],1)
-        azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 0)
-
-        time.sleep(5);
-    elif(skor["prviIgracSkor"]<skor["drugiIgracSkor"]):
-        igrac[1]["igrac"].client_socket.send("Cestitamo! Vi ste pobedili".encode());
-        igrac[0]["igrac"].client_socket.send("Nazalost izgubili ste. Vise sredje sledeci put!".encode());
-        azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 1)
-        azuriraj(igrac[0]["igrac"].username, skor["prviIgracSkor"], 0)
-
-    else:
-        slanjeSvimIgracima(igrac,"Nereseno je!")
-        time.sleep(5);
-        azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 0)
-        azuriraj(igrac[0]["igrac"].username, skor["prviIgracSkor"], 0)
+            slanjeSvimIgracima(igrac,"Nereseno je!")
+            time.sleep(5);
+            azuriraj(igrac[1]["igrac"].username, skor["drugiIgracSkor"], 0)
+            azuriraj(igrac[0]["igrac"].username, skor["prviIgracSkor"], 0)
 
 
 
