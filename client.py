@@ -23,6 +23,10 @@ class ListenThread(Thread):
                     cl_socket.send("TimeOut".encode());
                     continue;
 
+                if(tekst == "napusti123."):
+                    cl_socket.send("napusti123".encode());
+                    continue;
+
                 print(tekst);
 
                 if(tekst=="Dovidjenja"):

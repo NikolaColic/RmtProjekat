@@ -178,7 +178,7 @@ class ClientHandler(Thread):
                                  break;
                         if(prom==1):
                             self.sock.send("Uneti korisnik se vec ulogovan".encode());
-                            break;
+                            continue;
 
                         self.sock.send("Uspesno ste se login".encode());
                         loginKlijent = LoginOsoba(username,sifraLogin,self.address,self.sock);
@@ -196,7 +196,10 @@ class ClientHandler(Thread):
                     while(True):
                         self.sock.send("\nDobrodosli u igricu.\n 1.Igrajte igricu \n 2.Vasa statistika \n "
                                        "3.Rang Lista (brojPoena/brojMeceva) \n 4.Vratite se u glavni meni".encode());
-                        izborIgrica = self.sock.recv(4096).decode();
+                        try:
+                            izborIgrica = self.sock.recv(4096).decode();
+                        except:
+                            print("pukao");
                         if(izborIgrica=="1"):
                             self.sock.send("Trazimo vase protivnika molim vas sacekajte".encode());
                             osoba = LoginOsoba("","","","");
@@ -267,14 +270,10 @@ class ClientHandler(Thread):
                                 prviIgrac.client_socket.send("Dobrodosli u igricu".encode());
                                 drugiIgrac.client_socket.send("Dobrodosli u igricu".encode());
                                 time.sleep(3);
-                                #t1 = Thread(target=igrica,args=(matricaPocetna,prviIgrac,drugiIgrac));
-
-
-
-
                                 listaMeceva.append(prviIgrac);
                                 listaMeceva.append(drugiIgrac);
                                 igrica(matricaPocetna,prviIgrac,drugiIgrac);
+                                time.sleep(1);
                                 listaMeceva.remove(prviIgrac);
                                 listaMeceva.remove(drugiIgrac);
 
@@ -286,7 +285,7 @@ class ClientHandler(Thread):
                                             brojac=1;
                                             break;
 
-                                   time.sleep(5);
+                                   time.sleep(3);
 
 
                         elif(izborIgrica=="2"):
@@ -320,30 +319,23 @@ class ClientHandler(Thread):
                     self.sock.send("Dovidjenja".encode());
                 else:
                     self.sock.send("Pogresno ste uneli broj".encode());
-            except ConnectionResetError:
-                # Making a sending format variable
+            except Exception:
+                # ConnectionResetError
 
-
-
-                #clients.remove(self)
-                # Send every client that this client disconnected
-                # for x in listaMeceva:
-                #     if(x["prvi"].client_socket == self.sock and x["prvi"].client_adress == self.address):
-                #         x["drugi"].client_socket.send("Vas protivnik je napustio igru".encode())
-                #     if (x["drugi"].client_socket == self.sock and x["drugi"].client_adress == self.address):
-                #         x["prvi"].client_socket.send("Vas protivnik je napustio igru".encode())
-                #     listaMeceva.remove(x);
+                try:
+                    listaMeceva.remove(prviIgrac);
+                    listaMeceva.remove(drugiIgrac)
+                except Exception:
+                    print("nema ga u listi");
 
                 for x in loginClients:
                     if(x.client_socket ==self.sock and x.client_adress == self.address):
                         loginClients.remove(x);
                         break;
 
-
-                # Close the connection to the server
                 self.sock.close()
                 # Break out of the infinite loop so the thread can finish
-                break
+                break;
 
 #Liste koje su mi potrebne
 clients =[];
