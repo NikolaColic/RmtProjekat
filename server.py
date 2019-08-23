@@ -101,7 +101,7 @@ class ClientHandler(Thread):
                         if (proveraImenaPrezimena(prezimeRegistracija) == False ):
                             self.sock.send("Pogresno ste uneli prezime".encode());
                             continue;
-                        self.sock.send("Unesite username".encode());
+                        self.sock.send("Unesite username. Username mora sadrzati minimum 5 karaktera".encode());
                         usernameRegistracija = self.sock.recv(4096).decode()
                         if (usernameRegistracija.lower() == "napusti"):
                             break;  # za povratak u glavni meni
@@ -118,7 +118,7 @@ class ClientHandler(Thread):
                             continue;
 
 
-                        self.sock.send("Unesite sifru".encode());
+                        self.sock.send("Unesite sifru. Sifra mora sadrzati minimum 7 karaktera, makar jedno veliko slovo i makar jedna broj".encode());
                         sifraRegistracija = self.sock.recv(4096).decode()
                         if (sifraRegistracija.lower() == "napusti"):
                             break;  # za povratak u glavni meni

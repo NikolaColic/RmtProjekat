@@ -42,6 +42,16 @@ def slanjeIgracuBezPoteza(igraci,nekiIgrac,poruka):
     except Exception:
         print("nije okej");
 
+def povratakOdPedeset(trenutnaPozicija,korak,mat):
+    if(korak == "napred"):
+        if((trenutnaPozicija["brojVrste"] == len(mat)-1 or trenutnaPozicija["brojVrste"] == len(mat)-2) and trenutnaPozicija["brojKolone"]==0):
+            return False;
+    if (korak == "dole"):
+        if ((trenutnaPozicija["brojVrste"] == 0 or trenutnaPozicija["brojVrste"] == 1) and
+                trenutnaPozicija["brojKolone"] == len(mat[1])-1):
+            return False;
+
+    return True;
 
 def kretanjeMatrica(korak,trenutnaPozicija,mat,listaPosecenih):
     #trenutna se salje kao string sa brojem reda i kolone trenutna pozicija = [1,2] 1-broj reda a 2 broj kolone
@@ -56,11 +66,13 @@ def kretanjeMatrica(korak,trenutnaPozicija,mat,listaPosecenih):
             return False;
         if(trenutnaPozicija["brojIgraca"]==1):
             for x in listaPosecenih[0]:
-                if(x["brojVrste"] == trenutnaPozicija["brojVrste"]-1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]):
+                if(x["brojVrste"] == trenutnaPozicija["brojVrste"]-1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]
+                and povratakOdPedeset(trenutnaPozicija,"napred",mat)==True):
                     return False;
         else:
             for x in listaPosecenih[1]:
-                if(x["brojVrste"] == trenutnaPozicija["brojVrste"]-1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]):
+                if(x["brojVrste"] == trenutnaPozicija["brojVrste"]-1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]
+                and povratakOdPedeset(trenutnaPozicija,"napred",mat)==True):
                     return False;
 
         trenutnaPozicija["brojVrste"]-=1;
@@ -108,11 +120,13 @@ def kretanjeMatrica(korak,trenutnaPozicija,mat,listaPosecenih):
             return False;
         if (trenutnaPozicija["brojIgraca"] == 1):
             for x in listaPosecenih[0]:
-                if (x["brojVrste"] == trenutnaPozicija["brojVrste"] + 1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]):
+                if (x["brojVrste"] == trenutnaPozicija["brojVrste"] + 1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]
+                and povratakOdPedeset(trenutnaPozicija,"dole",mat)==True):
                     return False;
         else:
             for x in listaPosecenih[1]:
-                if (x["brojVrste"] == trenutnaPozicija["brojVrste"] + 1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]):
+                if (x["brojVrste"] == trenutnaPozicija["brojVrste"] + 1 and x["brojKolone"] == trenutnaPozicija["brojKolone"]
+                and povratakOdPedeset(trenutnaPozicija,"dole",mat)==True):
                     return False;
         trenutnaPozicija["brojVrste"] += 1;
         trenutnaPozicija["vrednostMatrice"] = mat[trenutnaPozicija["brojVrste"] ][trenutnaPozicija["brojKolone"]]
@@ -341,7 +355,7 @@ def igrica(matrica,prviIgrac,drugiIgrac): #mora metoda da se pozove koja postavl
                 noviTimer.start();
                 odg1 = igrac[0]["igrac"].client_socket.recv(4096).decode()
                 if(odg1 == "TimeOut"):
-                    print("okej")
+                    print("\n")
                 noviTimer.cancel()
 
             else:
